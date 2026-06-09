@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { AppBar, Toolbar, Typography, Container, Box, Button } from '@mui/material'
 import TeamsPage from './pages/TeamsPage'
 import IndividualsPage from './pages/IndividualsPage'
 import AchievementsPage from './pages/AchievementsPage'
+import LoginPage from './pages/LoginPage'
 
-function NavBar() {
+function NavBar({ user, onLogout }) {
   const location = useLocation()
 
   const navItems = [
@@ -19,7 +21,7 @@ function NavBar() {
         <Typography variant="h6" sx={{ flexGrow: 0, mr: 4 }}>
           ACME Team Manager
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, flexGrow: 1 }}>
           {navItems.map(item => (
             <Button
               key={item.path}
@@ -32,20 +34,42 @@ function NavBar() {
             </Button>
           ))}
         </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="body2">
+            {user.username} ({user.role})
+          </Typography>
+          <Button color="inherit" variant="outlined" size="small" onClick={onLogout}>
+            Logout
+          </Button>
+        </Box>
       </Toolbar>
     </AppBar>
   )
 }
 
 function App() {
+  const [user, setUser] = useState(null)
+
+  const handleLogin = (data) => {
+    setUser(data)
+  }
+
+  const handleLogout = () => {
+    setUser(null)
+  }
+
+  if (!user) {
+    return <LoginPage onLogin={handleLogin} />
+  }
+
   return (
     <BrowserRouter>
-      <NavBar />
+      <NavBar user={user} onLogout={handleLogout} />
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <Routes>
-          <Route path="/" element={<TeamsPage />} />
-          <Route path="/individuals" element={<IndividualsPage />} />
-          <Route path="/achievements" element={<AchievementsPage />} />
+          <Route path="/" element={<TeamsPage user={user} />} />
+          <Route path="/individuals" element={<IndividualsPage user={user} />} />
+          <Route path="/achievements" element={<AchievementsPage user={user} />} />
         </Routes>
       </Container>
     </BrowserRouter>

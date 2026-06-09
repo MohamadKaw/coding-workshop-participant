@@ -9,7 +9,10 @@ import api from '../services/api'
 
 const empty = { name: '', location: '', leader_id: '' }
 
-export default function TeamsPage() {
+export default function TeamsPage({ user }) {
+  const isViewer = user?.role === 'Viewer'
+  const isManager = user?.role === 'Manager'
+
   const [teams, setTeams] = useState([])
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -31,7 +34,7 @@ export default function TeamsPage() {
   const openEdit = (team) => { setEditing(team); setForm({ name: team.name, location: team.location, leader_id: team.leader_id || '' }); setOpen(true) }
   const handleClose = () => { setOpen(false); setError('') }
 
-const handleSave = async () => {
+  const handleSave = async () => {
     if (!form.name || !form.location) { setError('Name and location are required'); return }
     try {
       const data = {
@@ -61,7 +64,9 @@ const handleSave = async () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Teams</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openAdd}>Add Team</Button>
+        {!isViewer && (
+          <Button variant="contained" startIcon={<Add />} onClick={openAdd}>Add Team</Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -74,7 +79,7 @@ const handleSave = async () => {
               <TableCell>Name</TableCell>
               <TableCell>Location</TableCell>
               <TableCell>Leader ID</TableCell>
-              <TableCell>Actions</TableCell>
+              {!isViewer && <TableCell>Actions</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -89,10 +94,14 @@ const handleSave = async () => {
                   <TableCell>{team.name}</TableCell>
                   <TableCell>{team.location}</TableCell>
                   <TableCell>{team.leader_id || '-'}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => openEdit(team)} color="primary"><Edit /></IconButton>
-                    <IconButton onClick={() => handleDelete(team.id)} color="error"><Delete /></IconButton>
-                  </TableCell>
+                  {!isViewer && (
+                    <TableCell>
+                      <IconButton onClick={() => openEdit(team)} color="primary"><Edit /></IconButton>
+                      {!isManager && (
+                        <IconButton onClick={() => handleDelete(team.id)} color="error"><Delete /></IconButton>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

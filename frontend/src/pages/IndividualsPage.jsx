@@ -9,7 +9,10 @@ import api from '../services/api'
 
 const empty = { name: '', role: '', team_id: '', location: '', is_direct: true }
 
-export default function IndividualsPage() {
+export default function IndividualsPage({ user }) {
+  const isViewer = user?.role === 'Viewer'
+  const isManager = user?.role === 'Manager'
+
   const [individuals, setIndividuals] = useState([])
   const [teams, setTeams] = useState([])
   const [open, setOpen] = useState(false)
@@ -43,7 +46,7 @@ export default function IndividualsPage() {
   }
   const handleClose = () => { setOpen(false); setError('') }
 
-const handleSave = async () => {
+  const handleSave = async () => {
     if (!form.name || !form.role) { setError('Name and role are required'); return }
     try {
       const data = {
@@ -80,7 +83,9 @@ const handleSave = async () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Individuals</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openAdd}>Add Individual</Button>
+        {!isViewer && (
+          <Button variant="contained" startIcon={<Add />} onClick={openAdd}>Add Individual</Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -95,7 +100,7 @@ const handleSave = async () => {
               <TableCell>Team</TableCell>
               <TableCell>Location</TableCell>
               <TableCell>Direct</TableCell>
-              <TableCell>Actions</TableCell>
+              {!isViewer && <TableCell>Actions</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -112,10 +117,14 @@ const handleSave = async () => {
                   <TableCell>{getTeamName(ind.team_id)}</TableCell>
                   <TableCell>{ind.location || '-'}</TableCell>
                   <TableCell>{ind.is_direct ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => openEdit(ind)} color="primary"><Edit /></IconButton>
-                    <IconButton onClick={() => handleDelete(ind.id)} color="error"><Delete /></IconButton>
-                  </TableCell>
+                  {!isViewer && (
+                    <TableCell>
+                      <IconButton onClick={() => openEdit(ind)} color="primary"><Edit /></IconButton>
+                      {!isManager && (
+                        <IconButton onClick={() => handleDelete(ind.id)} color="error"><Delete /></IconButton>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

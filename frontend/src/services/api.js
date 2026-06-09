@@ -18,6 +18,9 @@ const api = {
   createAchievement: (data) => fetch(`${API_URL}/api/achievements-service/achievements`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
   updateAchievement: (id, data) => fetch(`${API_URL}/api/achievements-service/achievements/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
   deleteAchievement: (id) => fetch(`${API_URL}/api/achievements-service/achievements/${id}`, { method: 'DELETE' }),
+
+  // Auth
+  login: (data) => fetch(`${API_URL}/api/auth-service/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
 };
 
 export default api;

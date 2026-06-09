@@ -9,7 +9,10 @@ import api from '../services/api'
 
 const empty = { title: '', description: '', team_id: '', month: '', year: '' }
 
-export default function AchievementsPage() {
+export default function AchievementsPage({ user }) {
+  const isViewer = user?.role === 'Viewer'
+  const isManager = user?.role === 'Manager'
+
   const [achievements, setAchievements] = useState([])
   const [teams, setTeams] = useState([])
   const [open, setOpen] = useState(false)
@@ -80,7 +83,9 @@ export default function AchievementsPage() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Achievements</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openAdd}>Add Achievement</Button>
+        {!isViewer && (
+          <Button variant="contained" startIcon={<Add />} onClick={openAdd}>Add Achievement</Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -95,7 +100,7 @@ export default function AchievementsPage() {
               <TableCell>Month</TableCell>
               <TableCell>Year</TableCell>
               <TableCell>Description</TableCell>
-              <TableCell>Actions</TableCell>
+              {!isViewer && <TableCell>Actions</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -112,10 +117,14 @@ export default function AchievementsPage() {
                   <TableCell>{months[a.month - 1]}</TableCell>
                   <TableCell>{a.year}</TableCell>
                   <TableCell>{a.description || '-'}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => openEdit(a)} color="primary"><Edit /></IconButton>
-                    <IconButton onClick={() => handleDelete(a.id)} color="error"><Delete /></IconButton>
-                  </TableCell>
+                  {!isViewer && (
+                    <TableCell>
+                      <IconButton onClick={() => openEdit(a)} color="primary"><Edit /></IconButton>
+                      {!isManager && (
+                        <IconButton onClick={() => handleDelete(a.id)} color="error"><Delete /></IconButton>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
