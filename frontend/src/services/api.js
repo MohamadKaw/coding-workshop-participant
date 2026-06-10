@@ -23,18 +23,18 @@ const api = {
   login: (data) => fetch(`${API_URL}/api/auth-service/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
   getUsers: () => fetch(`${API_URL}/api/auth-service/users`).then(r => r.json()),
 
-  // Projects
-  getProjects: () => fetch(`${API_URL}/api/projects-service/projects`).then(r => r.json()),
-  getProject: (id) => fetch(`${API_URL}/api/projects-service/projects/${id}`).then(r => r.json()),
-  createProject: (data) => fetch(`${API_URL}/api/projects-service/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
-  updateProject: (id, data) => fetch(`${API_URL}/api/projects-service/projects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
-  deleteProject: (id) => fetch(`${API_URL}/api/projects-service/projects/${id}`, { method: 'DELETE' }),
+  // Projects - using direct Lambda URL due to CloudFront routing
+  getProjects: () => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/projects`).then(r => r.json()),
+  getProject: (id) => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/projects/${id}`).then(r => r.json()),
+  createProject: (data) => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  updateProject: (id, data) => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/projects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  deleteProject: (id) => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/projects/${id}`, { method: 'DELETE' }),
 
-  // Deliverables
-  getDeliverables: (projectId) => fetch(`${API_URL}/api/projects-service/projects/${projectId}/deliverables`).then(r => r.json()),
-  createDeliverable: (projectId, data) => fetch(`${API_URL}/api/projects-service/projects/${projectId}/deliverables`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
-  updateDeliverable: (id, data) => fetch(`${API_URL}/api/projects-service/deliverables/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
-  deleteDeliverable: (id) => fetch(`${API_URL}/api/projects-service/deliverables/${id}`, { method: 'DELETE' }),
+  // Deliverables - using direct Lambda URL
+  getDeliverables: (projectId) => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/projects/${projectId}/deliverables`).then(r => r.json()),
+  createDeliverable: (projectId, data) => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/projects/${projectId}/deliverables`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  updateDeliverable: (id, data) => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/deliverables/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  deleteDeliverable: (id) => fetch(`https://utuiv3aaqkuxfpsulwqxqlqr5i0zbrry.lambda-url.us-east-1.on.aws/deliverables/${id}`, { method: 'DELETE' }),
 };
 
 export default api;

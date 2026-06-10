@@ -115,7 +115,7 @@ function ProjectRow({ project, users, isViewer, isManager, onEditProject, onDele
         <TableCell>
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {project.users?.map(u => (
-              <Chip key={u.id} label={u.username} size="small" variant="outlined" />
+              <Chip key={u.id} label={u.name} size="small" variant="outlined" />
             ))}
           </Box>
         </TableCell>
@@ -192,7 +192,7 @@ function ProjectRow({ project, users, isViewer, isManager, onEditProject, onDele
           <TextField label="Description (optional)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} fullWidth multiline rows={2} />
           <TextField select label="Assigned To (optional)" value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })} fullWidth>
             <MenuItem value="">None</MenuItem>
-            {users.map(u => <MenuItem key={u.id} value={u.id}>{u.username}</MenuItem>)}
+            {users.map(u => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)}
           </TextField>
           <TextField select label="Status" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} fullWidth>
             {STATUS_OPTIONS.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
@@ -240,7 +240,7 @@ export default function ProjectsPage({ user }) {
 
   const loadUsers = async () => {
     try {
-      const data = await api.getUsers()
+      const data = await api.getIndividuals()
       setUsers(Array.isArray(data) ? data : [])
     } catch (e) {}
   }
@@ -341,12 +341,12 @@ export default function ProjectsPage({ user }) {
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {selected.map(id => {
                     const u = users.find(u => u.id === id)
-                    return <Chip key={id} label={u?.username || id} size="small" />
+                    return <Chip key={id} label={u?.name || id} size="small" />
                   })}
                 </Box>
               )}
             >
-              {users.map(u => <MenuItem key={u.id} value={u.id}>{u.username}</MenuItem>)}
+              {users.map(u => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)}
             </Select>
           </FormControl>
         </DialogContent>
