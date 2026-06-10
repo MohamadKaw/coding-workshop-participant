@@ -1,7 +1,6 @@
 """
 Auth Service - Simple login with plain text passwords for workshop.
 """
-
 import json
 import logging
 import os
@@ -33,6 +32,10 @@ def handler(event=None, context=None):
 
     if http_method == "POST" and "login" in path:
         return login(body)
+    elif http_method == "GET" and "users" in path:
+        return get_users()
+    elif http_method == "GET" and "setup" in path:
+        return setup_db()
     else:
         return response(405, {"error": "Method not allowed"})
 
@@ -60,6 +63,84 @@ def login(body):
         "username": row[1],
         "role": row[2]
     })
+
+
+def get_users():
+    conn = get_db_connection(PG_CONFIG)
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, username, role FROM users;")
+        rows = cur.fetchall()
+    users = [{"id": r[0], "username": r[1], "role": r[2]} for r in rows]
+    return response(200, users)
+
+
+def setup_db():
+    conn = get_db_connection(PG_CONFIG)
+    with conn.cursor() as cur:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                role VARCHAR(20) NOT NULL DEFAULT 'Viewer',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS teams (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                location VARCHAR(100) NOT NULL,
+                leader_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS individuals (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                role VARCHAR(100) NOT NULL,
+                team_id INTEGER REFERENCES teams(id),
+                location VARCHAR(100),
+                is_direct BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS achievements (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                team_id INTEGER REFERENCES teams(id),
+                month INTEGER NOT NULL,
+                year INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS projects (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
+                description TEXT,
+                status VARCHAR(20) DEFAULT 'Green',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS project_users (
+                project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                PRIMARY KEY (project_id, user_id)
+            );
+            CREATE TABLE IF NOT EXISTS deliverables (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+                assigned_to INTEGER REFERENCES users(id),
+                status VARCHAR(50) DEFAULT 'Not Started',
+                rag_status VARCHAR(10) DEFAULT 'Green',
+                depends_on INTEGER REFERENCES deliverables(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT INTO users (username, password_hash, role) VALUES
+                ('admin', 'admin123', 'Admin'),
+                ('manager', 'manager123', 'Manager'),
+                ('viewer', 'viewer123', 'Viewer')
+            ON CONFLICT (username) DO NOTHING;
+        """)
+        conn.commit()
+    return response(200, {"message": "Database setup complete!"})
 
 
 def response(status_code, body):

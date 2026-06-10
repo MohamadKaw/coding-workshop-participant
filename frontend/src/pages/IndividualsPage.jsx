@@ -132,7 +132,8 @@ export default function IndividualsPage({ user }) {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm" 
+        PaperProps={{ sx: { m: { xs: 1, sm: 2 }, width: '100%' } }}>
         <DialogTitle>{editing ? 'Edit Individual' : 'Add Individual'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}

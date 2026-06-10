@@ -1,10 +1,11 @@
 """
 PostgreSQL connection management for Lambda.
 """
+import os
 from psycopg import connect
 
 def get_db_connection(config):
-    """
-    Always creates a fresh connection - correct approach for Lambda.
-    """
+    is_local = os.getenv('IS_LOCAL', 'false') == 'true'
+    if not is_local:
+        config = config + " sslmode=require"
     return connect(config)
