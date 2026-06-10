@@ -32,14 +32,6 @@ def handler(event=None, context=None):
     body = json.loads(event.get("body") or "{}")
     path_parts = [p for p in path.strip("/").split("/") if p]
 
-    # Routes:
-    # /projects                          GET, POST
-    # /projects/{id}                     GET, PUT, DELETE
-    # /projects/{id}/users               GET, POST
-    # /projects/{id}/users/{user_id}     DELETE
-    # /projects/{id}/deliverables        GET, POST
-    # /deliverables/{id}                 GET, PUT, DELETE
-
     if len(path_parts) == 0 or path_parts[0] != 'projects' and path_parts[0] != 'deliverables':
         return response(404, {"error": "Not found"})
 
@@ -99,12 +91,12 @@ def get_all_projects():
             SELECT p.id, p.name, p.description, p.status, p.created_at,
                    COALESCE(
                        json_agg(
-                           json_build_object('id', u.id, 'username', u.username)
+                           json_build_object('id', u.id, 'name', u.name)
                        ) FILTER (WHERE u.id IS NOT NULL), '[]'
                    ) as users
             FROM projects p
             LEFT JOIN project_users pu ON p.id = pu.project_id
-            LEFT JOIN users u ON pu.user_id = u.id
+            LEFT JOIN individuals u ON pu.individual_id = u.id
             GROUP BY p.id
             ORDER BY p.id;
         """)
@@ -120,12 +112,12 @@ def get_project(project_id):
             SELECT p.id, p.name, p.description, p.status, p.created_at,
                    COALESCE(
                        json_agg(
-                           json_build_object('id', u.id, 'username', u.username)
+                           json_build_object('id', u.id, 'name', u.name)
                        ) FILTER (WHERE u.id IS NOT NULL), '[]'
                    ) as users
             FROM projects p
             LEFT JOIN project_users pu ON p.id = pu.project_id
-            LEFT JOIN users u ON pu.user_id = u.id
+            LEFT JOIN individuals u ON pu.individual_id = u.id
             WHERE p.id = %s
             GROUP BY p.id;
         """, (project_id,))
@@ -151,10 +143,10 @@ def create_project(body):
             (name, description, status)
         )
         project_id = cur.fetchone()[0]
-        for user_id in user_ids:
+        for individual_id in user_ids:
             cur.execute(
-                "INSERT INTO project_users (project_id, user_id) VALUES (%s, %s) ON CONFLICT DO NOTHING;",
-                (project_id, user_id)
+                "INSERT INTO project_users (project_id, individual_id) VALUES (%s, %s) ON CONFLICT DO NOTHING;",
+                (project_id, individual_id)
             )
         conn.commit()
     return response(201, {"id": project_id, "name": name, "description": description, "status": status, "user_ids": user_ids})
@@ -176,10 +168,10 @@ def update_project(project_id, body):
             (name, description, status, project_id)
         )
         cur.execute("DELETE FROM project_users WHERE project_id = %s;", (project_id,))
-        for user_id in user_ids:
+        for individual_id in user_ids:
             cur.execute(
-                "INSERT INTO project_users (project_id, user_id) VALUES (%s, %s) ON CONFLICT DO NOTHING;",
-                (project_id, user_id)
+                "INSERT INTO project_users (project_id, individual_id) VALUES (%s, %s) ON CONFLICT DO NOTHING;",
+                (project_id, individual_id)
             )
         conn.commit()
     return response(200, {"id": project_id, "name": name, "description": description, "status": status, "user_ids": user_ids})
@@ -199,36 +191,36 @@ def get_project_users(project_id):
     conn = get_db_connection(PG_CONFIG)
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT u.id, u.username, u.role
-            FROM users u
-            JOIN project_users pu ON u.id = pu.user_id
+            SELECT u.id, u.name, u.role
+            FROM individuals u
+            JOIN project_users pu ON u.id = pu.individual_id
             WHERE pu.project_id = %s;
         """, (project_id,))
         rows = cur.fetchall()
-    users = [{"id": r[0], "username": r[1], "role": r[2]} for r in rows]
+    users = [{"id": r[0], "name": r[1], "role": r[2]} for r in rows]
     return response(200, users)
 
 
 def add_project_user(project_id, body):
-    user_id = body.get("user_id")
-    if not user_id:
-        return response(400, {"error": "user_id is required"})
+    individual_id = body.get("individual_id")
+    if not individual_id:
+        return response(400, {"error": "individual_id is required"})
     conn = get_db_connection(PG_CONFIG)
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO project_users (project_id, user_id) VALUES (%s, %s) ON CONFLICT DO NOTHING;",
-            (project_id, user_id)
+            "INSERT INTO project_users (project_id, individual_id) VALUES (%s, %s) ON CONFLICT DO NOTHING;",
+            (project_id, individual_id)
         )
         conn.commit()
-    return response(201, {"project_id": project_id, "user_id": user_id})
+    return response(201, {"project_id": project_id, "individual_id": individual_id})
 
 
-def remove_project_user(project_id, user_id):
+def remove_project_user(project_id, individual_id):
     conn = get_db_connection(PG_CONFIG)
     with conn.cursor() as cur:
         cur.execute(
-            "DELETE FROM project_users WHERE project_id = %s AND user_id = %s;",
-            (project_id, user_id)
+            "DELETE FROM project_users WHERE project_id = %s AND individual_id = %s;",
+            (project_id, individual_id)
         )
         conn.commit()
     return response(204, {})
@@ -241,9 +233,9 @@ def get_project_deliverables(project_id):
     with conn.cursor() as cur:
         cur.execute("""
             SELECT d.id, d.title, d.description, d.project_id, d.assigned_to,
-                   d.status, d.rag_status, d.depends_on, u.username as assigned_username
+                   d.status, d.rag_status, d.depends_on, u.name as assigned_username
             FROM deliverables d
-            LEFT JOIN users u ON d.assigned_to = u.id
+            LEFT JOIN individuals u ON d.assigned_to = u.id
             WHERE d.project_id = %s
             ORDER BY d.id;
         """, (project_id,))
@@ -259,9 +251,9 @@ def get_deliverable(deliverable_id):
     with conn.cursor() as cur:
         cur.execute("""
             SELECT d.id, d.title, d.description, d.project_id, d.assigned_to,
-                   d.status, d.rag_status, d.depends_on, u.username as assigned_username
+                   d.status, d.rag_status, d.depends_on, u.name as assigned_username
             FROM deliverables d
-            LEFT JOIN users u ON d.assigned_to = u.id
+            LEFT JOIN individuals u ON d.assigned_to = u.id
             WHERE d.id = %s;
         """, (deliverable_id,))
         row = cur.fetchone()

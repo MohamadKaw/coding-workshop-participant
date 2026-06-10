@@ -36,6 +36,8 @@ def handler(event=None, context=None):
         return get_users()
     elif http_method == "GET" and "setup" in path:
         return setup_db()
+    elif http_method == "GET" and "migrate" in path:
+        return migrate_db()
     else:
         return response(405, {"error": "Method not allowed"})
 
@@ -72,6 +74,21 @@ def get_users():
         rows = cur.fetchall()
     users = [{"id": r[0], "username": r[1], "role": r[2]} for r in rows]
     return response(200, users)
+
+
+def migrate_db():
+    conn = get_db_connection(PG_CONFIG)
+    with conn.cursor() as cur:
+        cur.execute("""
+            DROP TABLE IF EXISTS project_users CASCADE;
+            CREATE TABLE project_users (
+                project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+                individual_id INTEGER REFERENCES individuals(id) ON DELETE CASCADE,
+                PRIMARY KEY (project_id, individual_id)
+            );
+        """)
+        conn.commit()
+    return response(200, {"message": "Migration complete!"})
 
 
 def setup_db():
@@ -119,15 +136,15 @@ def setup_db():
             );
             CREATE TABLE IF NOT EXISTS project_users (
                 project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
-                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                PRIMARY KEY (project_id, user_id)
+                individual_id INTEGER REFERENCES individuals(id) ON DELETE CASCADE,
+                PRIMARY KEY (project_id, individual_id)
             );
             CREATE TABLE IF NOT EXISTS deliverables (
                 id SERIAL PRIMARY KEY,
                 title VARCHAR(200) NOT NULL,
                 description TEXT,
                 project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
-                assigned_to INTEGER REFERENCES users(id),
+                assigned_to INTEGER REFERENCES individuals(id),
                 status VARCHAR(50) DEFAULT 'Not Started',
                 rag_status VARCHAR(10) DEFAULT 'Green',
                 depends_on INTEGER REFERENCES deliverables(id),
